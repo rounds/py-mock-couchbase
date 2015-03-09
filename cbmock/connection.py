@@ -21,6 +21,7 @@ class MockCouchbaseConnection(object):
         self.design_docs = dict()
         self.views = dict()
         self.load_views(view_dir)
+        self.counters = dict()
 
     def pre_load_data(self, data_dir):
         if data_dir:
@@ -89,6 +90,12 @@ class MockCouchbaseConnection(object):
                 results.all_ok = False
                 results[key] = None
         return results
+
+    def incr(self, key, initial=None, ttl=0):
+        if key not in self.counters and initial is None:
+            raise Exception("counter doesn't exist and no initial value")
+        self.counters[key] = self.counters.get(key, initial) + 1
+        return ValueResult(key, self.counters[key])
 
     def delete(self, key, cas=0, quiet=None, persist_to=0, replicate_to=0):
         if key not in self.data:
