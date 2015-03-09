@@ -58,7 +58,7 @@ class CBMockView(object):
 
 
     def map_item(self, document, meta_data):
-        doc = document if isinstance(document, basestring) else json.dumps(document)
+        doc = json.dumps(document)
         meta = json.dumps(meta_data)
         # go through and remove this object from all emissions if it exists already
         for emissions in self.map_emissions.values():
