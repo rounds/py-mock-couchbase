@@ -75,7 +75,7 @@ class MockCouchbaseConnection(object):
         self.update_views(key, value)
 
     def get(self, key, ttl=0, quiet=None, replica=False, no_format=False):
-        if key not in self.data:
+        if key not in self.data and not quiet:
             raise NotFoundError("not found")
         return ValueResult(key, self.data[key])
 
@@ -86,10 +86,13 @@ class MockCouchbaseConnection(object):
         results = MultiResult()
         for key in keys:
             try:
-                results[key] = self.get(key)
+                results[key] = self.get(key, quiet=quiet)
             except:
-                results.all_ok = False
-                results[key] = None
+                if quiet:
+                    results.all_ok = False
+                    results[key] = None
+                else:
+                    raise NotFoundError("not found")
         return results
 
     def incr(self, key, initial=None, ttl=0):
