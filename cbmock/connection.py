@@ -3,6 +3,7 @@ from couchbase.exceptions import KeyExistsError, NotFoundError
 import threading
 from cbmock.views import CBMockView
 import json
+import copy
 
 
 class MockCouchbaseConnection(object):
@@ -77,7 +78,8 @@ class MockCouchbaseConnection(object):
     def get(self, key, ttl=0, quiet=None, replica=False, no_format=False):
         if key not in self.data and not quiet:
             raise NotFoundError("not found")
-        return ValueResult(key, self.data[key])
+        # TODO cas should be real value
+        return ValueResult(key, copy.deepcopy(self.data.get(key)), cas=0)
 
     def get_multi(self, keys, ttl=0, quiet=None, replica=False, no_format=False):
         """
@@ -110,9 +112,13 @@ class MockCouchbaseConnection(object):
         del self.data[key]
         self.update_views(key, None)
 
-    def lock(self, key, ttl=0):
+    def _get_cas(self):
         cas = self.cas_counter
         self.cas_counter += 1
+        return cas
+
+    def lock(self, key, ttl=0):
+        cas = self._get_cas()
         self.locks[key] = cas
         if ttl:
             def unlock():
@@ -197,9 +203,10 @@ class OperationResult(CBMockResult):
 
 class ValueResult(CBMockResult):
     
-    def __init__(self, key, value):
+    def __init__(self, key, value, cas=None):
         super(ValueResult, self).__init__(key)
         self.value = value
+        self.cas = cas
 
 
 class MultiResult(dict):
