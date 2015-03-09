@@ -71,12 +71,14 @@ class CBMockView(object):
             try:
                 data = self._process(["node"], "{3};var map = {0};map({1}, {2});".format(self.map_func, doc, meta, emit_func))
                 if data:
-                    obj = json.loads(data)
-                    key = obj.get("key")
-                    value = obj.get("value")
-                    if key not in self.map_emissions:
-                        self.map_emissions[key] = list()
-                    self.map_emissions[key].append({"meta": meta_data, "value": value})
+                    # TODO this assumes emits are 1 document per line, which is shady
+                    for line in data.splitlines():
+                        obj = json.loads(line)
+                        key = obj.get("key")
+                        value = obj.get("value")
+                        if key not in self.map_emissions:
+                            self.map_emissions[key] = list()
+                        self.map_emissions[key].append({"meta": meta_data, "value": value})
             except:
                 print_exc()
 
@@ -87,7 +89,7 @@ class CBMockView(object):
         # TODO - support multi, range, and reduce
         results = list()
         if key:
-            data = self.map_emissions.get(key)
+            data = self.map_emissions.get(key, [])
             for item in data:
                 meta = item.get("meta")
                 doc = None
