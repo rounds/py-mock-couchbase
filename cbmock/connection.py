@@ -60,6 +60,7 @@ class MockCouchbaseConnection(object):
                 raise KeyExistsError("Key exits")
         self.data[key] = value
         self.update_views(key, value)
+        return CBMockResult(key)
 
     def add(self, key, value, ttl=0, format=None, persist_to=0, replicate_to=0):
         if key in self.data:
