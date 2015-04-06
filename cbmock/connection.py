@@ -97,10 +97,10 @@ class MockCouchbaseConnection(object):
                     raise NotFoundError("not found")
         return results
 
-    def incr(self, key, initial=None, ttl=0):
+    def incr(self, key, initial=None, amount=1, ttl=0):
         if key not in self.counters and initial is None:
             raise Exception("counter doesn't exist and no initial value")
-        self.counters[key] = self.counters.get(key, initial) + 1
+        self.counters[key] = self.counters.get(key, initial) + amount
         return ValueResult(key, self.counters[key])
 
     def delete(self, key, cas=0, quiet=None, persist_to=0, replicate_to=0):
