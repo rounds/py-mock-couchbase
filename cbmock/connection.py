@@ -97,6 +97,18 @@ class MockCouchbaseConnection(object):
                     raise NotFoundError("not found")
         return results
 
+    def set_multi(self, keys, ttl=0):
+        results = MultiResult()
+        for key, value in keys.iteritems():
+            try:
+                results[key] = self.set(key, value)
+            except:
+                results.all_ok = False
+                result = ValueResult(key, value)
+                result.success = False
+                results[key] = result
+        return results
+
     def incr(self, key, initial=None, amount=1, ttl=0):
         if key not in self.counters and initial is None:
             raise Exception("counter doesn't exist and no initial value")
