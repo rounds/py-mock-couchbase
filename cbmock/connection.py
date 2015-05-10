@@ -23,6 +23,7 @@ class MockCouchbaseConnection(object):
         self.views = dict()
         self.load_views(view_dir)
         self.counters = dict()
+        self.pending_for_view_update = []
 
     def pre_load_data(self, data_dir):
         if data_dir:
@@ -60,20 +61,20 @@ class MockCouchbaseConnection(object):
             if cas != self.locks[key]:
                 raise KeyExistsError("Key exits")
         self.data[key] = value
-        self.update_views(key, value)
+        self.pending_for_view_update.append((key, value))
         return CBMockResult(key)
 
     def add(self, key, value, ttl=0, format=None, persist_to=0, replicate_to=0):
         if key in self.data:
             raise KeyExistsError("Key exits")
         self.data[key] = value
-        self.update_views(key, value)
+        self.pending_for_view_update.append((key, value))
 
     def replace(self, key, value, cas=0, ttl=0, format=None, persist_to=0, replicate_to=0):
         if key not in self.data:
             raise NotFoundError("not found")
         self.data[key] = value
-        self.update_views(key, value)
+        self.pending_for_view_update.append((key, value))
 
     def get(self, key, ttl=0, quiet=None, replica=False, no_format=False):
         if key not in self.data and not quiet:
@@ -122,7 +123,7 @@ class MockCouchbaseConnection(object):
             if cas != self.locks[key]:
                 raise KeyExistsError("Key exits")
         del self.data[key]
-        self.update_views(key, None)
+        self.pending_for_view_update.append((key, None))
 
     def _get_cas(self):
         cas = self.cas_counter
@@ -181,6 +182,10 @@ class MockCouchbaseConnection(object):
             del self.design_docs[name]
 
     def query(self, design_name, view_name, **kwargs):
+        for key, value in self.pending_for_view_update:
+            self.update_views(key, value)
+        self.pending_for_view_update = []
+
         if design_name in self.views:
             view_set = self.views[design_name]
             if view_name in view_set:
@@ -197,7 +202,6 @@ class MockCouchbaseConnection(object):
         for design in self.views.values():
             for view in design.values():
                 view.map_item(doc, meta)
-
 
 
 class CBMockResult(object):
